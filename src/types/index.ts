@@ -30,3 +30,20 @@ export interface Article {
     categories?: string[];
   } | null;
 }
+export interface AppUserDTO {
+  id: string;
+  email: string;
+  username: string;
+  role: string; // Assuming backend sends "ADMIN" or "USER"
+  createdAt?: string;
+}
+
+export interface ChartDataDTO {
+  label: string; // Date or Category
+  value: number; // Count
+}
+
+export interface GlobalStats {
+  articles: number;
+  users: number;
+}
