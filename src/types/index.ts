@@ -1,19 +1,4 @@
-export interface User {
-  id: string;
-  username: string; // Updated from 'name'
-  email: string;
-  role: string;
-}
-
-export interface AiAnalysisResult {
-  title: string;
-  cleanedContent: string;
-  language: string;
-  summary: string;
-  keywords: string[];
-  seoTitle: string;
-  categories: string[];
-}
+// Add/Update these interfaces
 
 export enum ArticleStatus {
   PROCESSING = 'PROCESSING',
@@ -21,13 +6,27 @@ export enum ArticleStatus {
   FAILED = 'FAILED'
 }
 
+// Matches LiteArticleDTO
+export interface LiteArticle {
+  id: string;
+  title: string | null;
+  owner: string;
+  status: ArticleStatus;
+}
+
+// Matches ArticleDTO (The full version)
 export interface Article {
   id: string;
-  title: string;
-  content: string;
+  title: string | null;
   language: string;
-  owner: string; // UUID string
+  owner: string;
   status: ArticleStatus;
-  outputJson: AiAnalysisResult | null; // This holds the extracted data
-  createdAt: string; // Timestamp
+  createdAt: string; // Timestamp comes as string in JSON
+  outputJson: {
+    title?: string;
+    summary?: string;
+    keywords?: string[];
+    seoTitle?: string;
+    categories?: string[];
+  } | null;
 }
