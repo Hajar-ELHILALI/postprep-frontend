@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { Article } from '../types';
-import { Eye, Calendar, FileText, X, Tag, Layers, Hash, Trash2 } from 'lucide-react';
+import { Eye, Calendar, FileText, X, Tag, Layers, Hash, Trash2, RefreshCw } from 'lucide-react';
 
 export const MyArticles: React.FC = () => {
   const [articles, setArticles] = useState<Article[]>([]);
@@ -13,18 +13,19 @@ export const MyArticles: React.FC = () => {
   }, []);
 
   const fetchArticles = async () => {
+    setLoading(true);
     try {
       const res = await api.get('/article/myArticles');
       setArticles(res.data);
     } catch (error) {
       console.error("Failed to fetch articles", error);
     } finally {
-      setLoading(false);
+      // Small timeout to let the user see the spin animation if the network is too fast
+      setTimeout(() => setLoading(false), 500);
     }
   };
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
-    // Stop the click from opening the modal
     e.stopPropagation();
 
     if (!window.confirm("Are you sure you want to delete this analysis? This cannot be undone.")) {
@@ -32,10 +33,7 @@ export const MyArticles: React.FC = () => {
     }
 
     try {
-      // Matches Backend: @DeleteMapping("/delete/{postId}")
       await api.delete(`/article/delete/${id}`);
-      
-      // Remove from UI immediately
       setArticles((prev) => prev.filter((article) => article.id !== id));
     } catch (error) {
       console.error("Delete failed", error);
@@ -56,10 +54,29 @@ export const MyArticles: React.FC = () => {
       <div className="fixed top-1/3 left-1/4 w-[500px] h-[500px] bg-pink-600/20 rounded-full mix-blend-screen filter blur-[120px] opacity-30 animate-pulse -z-10 pointer-events-none"></div>
       <div className="fixed bottom-1/4 right-1/4 w-[400px] h-[400px] bg-purple-600/20 rounded-full mix-blend-screen filter blur-[120px] opacity-30 animate-pulse -z-10 pointer-events-none" style={{ animationDelay: '3s' }}></div>
 
-      <h2 className="text-3xl font-bold text-white mb-8 tracking-tight drop-shadow-md">My Articles</h2>
+      {/* HEADER SECTION */}
+      <div className="flex items-center justify-between mb-8">
+        <h2 className="text-3xl font-bold text-white tracking-tight drop-shadow-md">
+          My Articles
+        </h2>
+        
+        {/* REFRESH BUTTON */}
+        <button 
+          onClick={fetchArticles}
+          disabled={loading}
+          className="flex items-center gap-2 px-4 py-2 bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 hover:text-white border border-white/10 hover:border-pink-500/30 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+          title="Reload Data"
+        >
+          <RefreshCw size={18} className={`group-hover:text-pink-400 ${loading ? 'animate-spin text-pink-500' : ''}`} />
+          <span className="text-sm font-medium hidden sm:inline">Refresh</span>
+        </button>
+      </div>
 
-      {loading ? (
-        <div className="text-center py-12 text-slate-400 animate-pulse">Accessing database...</div>
+      {loading && articles.length === 0 ? (
+        <div className="text-center py-12 text-slate-400 animate-pulse flex flex-col items-center">
+           <RefreshCw size={24} className="animate-spin mb-4 opacity-50" />
+           Accessing database...
+        </div>
       ) : articles.length === 0 ? (
         <div className="text-center py-16 bg-slate-900/50 backdrop-blur-md rounded-2xl border border-dashed border-white/10 relative z-10">
           <p className="text-slate-400 text-lg">No documents processed yet.</p>
@@ -120,7 +137,6 @@ export const MyArticles: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
           <div className="bg-[#0f172a] rounded-2xl shadow-2xl border border-white/10 w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden relative">
             
-            {/* Modal Header */}
             <div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
               <h3 className="text-xl font-bold text-white tracking-wide">Analysis Details</h3>
               <button onClick={() => setSelectedArticle(null)} className="text-slate-400 hover:text-white transition-colors">
@@ -128,22 +144,18 @@ export const MyArticles: React.FC = () => {
               </button>
             </div>
 
-            {/* Modal Content */}
             <div className="p-8 overflow-y-auto space-y-8 custom-scrollbar">
-              
               {!selectedArticle.outputJson ? (
                 <div className="text-center py-12 text-slate-500 italic border border-dashed border-white/10 rounded-xl">
                   Analysis data unavailable or processing failed.
                 </div>
               ) : (
                 <>
-                  {/* Title */}
                   <div>
                     <label className="text-xs font-mono text-pink-400 uppercase tracking-widest mb-2 block">Document Title</label>
                     <p className="text-2xl font-bold text-white">{selectedArticle.outputJson.title}</p>
                   </div>
 
-                  {/* Summary */}
                   <div className="bg-white/5 p-6 rounded-xl border border-white/5">
                     <label className="text-xs font-mono text-pink-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
                        Ai Summary
@@ -153,7 +165,6 @@ export const MyArticles: React.FC = () => {
                     </p>
                   </div>
 
-                  {/* Keywords */}
                   <div>
                     <label className="text-xs font-mono text-slate-500 uppercase tracking-widest mb-3 block flex items-center gap-1">
                       <Hash size={12} /> Keywords
@@ -167,7 +178,6 @@ export const MyArticles: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* SEO & Categories */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="p-5 border border-white/10 rounded-xl bg-white/[0.02]">
                       <label className="text-xs font-mono text-slate-500 uppercase tracking-widest mb-3 block flex items-center gap-2">
@@ -190,7 +200,6 @@ export const MyArticles: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Raw Data Toggle */}
                   <div className="pt-6 border-t border-white/10">
                     <details className="text-xs text-slate-500 cursor-pointer group">
                       <summary className="group-hover:text-pink-400 transition-colors">Debug: View Raw JSON</summary>
@@ -203,7 +212,6 @@ export const MyArticles: React.FC = () => {
               )}
             </div>
             
-            {/* Modal Footer */}
             <div className="p-4 bg-white/5 border-t border-white/10 flex justify-end">
                <button 
                 onClick={() => setSelectedArticle(null)}
