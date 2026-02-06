@@ -19,6 +19,7 @@ export const Dashboard: React.FC = () => {
     formData.append('pdfFile', file);
 
     try {
+      // Matches Image: POST /api/v1/article/upload/pdf (Multipart)
       const res = await api.post('/article/upload/pdf', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
@@ -37,9 +38,12 @@ export const Dashboard: React.FC = () => {
 
     setUploading(true);
     try {
-      const res = await api.post('/article/upload/text', text, {
-        headers: { 'Content-Type': 'text/plain' }
-      });
+      // Matches Image: POST /api/v1/article/upload/text
+      // CRITICAL FIX: Image says "Upload raw text (JSON)", so we send JSON, not plain text.
+      const res = await api.post('/article/upload/text', 
+        { text: text }, // Wrapping text in a JSON object
+        { headers: { 'Content-Type': 'application/json' } }
+      );
       setLastArticle(res.data);
     } catch (error) {
       console.error(error);
@@ -51,7 +55,7 @@ export const Dashboard: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto pt-6 relative min-h-[80vh]">
-      
+       
       {/* --- BACKGROUND ATMOSPHERE (The Vibe) --- */}
       <div className="fixed top-20 left-[-10%] w-96 h-96 bg-pink-600/30 rounded-full mix-blend-screen filter blur-[100px] opacity-40 animate-pulse -z-10 pointer-events-none"></div>
       <div className="fixed bottom-20 right-[-10%] w-96 h-96 bg-purple-600/30 rounded-full mix-blend-screen filter blur-[100px] opacity-40 animate-pulse -z-10 pointer-events-none" style={{ animationDelay: '2s' }}></div>
@@ -101,7 +105,7 @@ export const Dashboard: React.FC = () => {
                 </span>
                 <span className="text-xs text-slate-500 mt-2">Supported: PDF (Max 10MB)</span>
               </label>
-              
+               
               <button 
                 type="submit" 
                 disabled={!file || uploading} 
@@ -144,7 +148,7 @@ export const Dashboard: React.FC = () => {
               {lastArticle.status}
             </span>
           </div>
-          
+           
           {lastArticle.outputJson ? (
              <div className="space-y-6">
                <div>
@@ -156,14 +160,14 @@ export const Dashboard: React.FC = () => {
                   <p className="text-slate-300 leading-relaxed">{lastArticle.outputJson.summary}</p>
                </div>
                <div>
-                 <h4 className="font-mono text-xs text-pink-400 uppercase tracking-widest mb-3">Keywords</h4>
-                 <div className="flex flex-wrap gap-2">
-                   {lastArticle.outputJson.keywords?.map((k, i) => (
-                     <span key={i} className="bg-purple-500/20 text-purple-200 px-3 py-1 rounded-full text-xs border border-purple-500/30">
-                       {k}
-                     </span>
-                   ))}
-                 </div>
+                  <h4 className="font-mono text-xs text-pink-400 uppercase tracking-widest mb-3">Keywords</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {lastArticle.outputJson.keywords?.map((k, i) => (
+                      <span key={i} className="bg-purple-500/20 text-purple-200 px-3 py-1 rounded-full text-xs border border-purple-500/30">
+                        {k}
+                      </span>
+                    ))}
+                  </div>
                </div>
              </div>
           ) : (

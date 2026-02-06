@@ -2,17 +2,18 @@ import React, { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { LiteArticle, Article } from '../types';
 import { Eye, FileText, X, Tag, Layers, Hash, Trash2, RefreshCw, Loader2, Code, Layout } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export const MyArticles: React.FC = () => {
   // List only holds Lite data
   const [articles, setArticles] = useState<LiteArticle[]>([]);
   const [loadingList, setLoadingList] = useState(true);
-  
+   
   // Selected holds the FULL data
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
+   
   // Toggle between "Pretty" and "JSON" view
   const [viewMode, setViewMode] = useState<'formatted' | 'json'>('formatted');
 
@@ -23,6 +24,7 @@ export const MyArticles: React.FC = () => {
   const fetchArticles = async () => {
     setLoadingList(true);
     try {
+      // Matches Image: GET /api/v1/article/myArticles
       const res = await api.get('/article/myArticles');
       setArticles(res.data);
     } catch (error) {
@@ -36,9 +38,10 @@ export const MyArticles: React.FC = () => {
     setIsModalOpen(true);
     setLoadingDetail(true);
     setSelectedArticle(null);
-    setViewMode('formatted'); // Reset to pretty view when opening new article
+    setViewMode('formatted'); 
 
     try {
+      // Matches Image: GET /api/v1/article/{id}
       const res = await api.get(`/article/${id}`);
       setSelectedArticle(res.data);
     } catch (error) {
@@ -55,6 +58,7 @@ export const MyArticles: React.FC = () => {
     if (!window.confirm("Are you sure you want to delete this analysis?")) return;
 
     try {
+      // Matches Image: DELETE /api/v1/article/delete/{postId}
       await api.delete(`/article/delete/${id}`);
       setArticles((prev) => prev.filter((a) => a.id !== id));
     } catch (error) {
@@ -65,7 +69,7 @@ export const MyArticles: React.FC = () => {
 
   return (
     <div className="max-w-6xl mx-auto pt-6 relative min-h-[80vh]">
-      
+       
       {/* --- BACKGROUND ATMOSPHERE --- */}
       <div className="fixed top-1/3 left-1/4 w-[500px] h-[500px] bg-pink-600/20 rounded-full mix-blend-screen filter blur-[120px] opacity-30 animate-pulse -z-10 pointer-events-none"></div>
       <div className="fixed bottom-1/4 right-1/4 w-[400px] h-[400px] bg-purple-600/20 rounded-full mix-blend-screen filter blur-[120px] opacity-30 animate-pulse -z-10 pointer-events-none" style={{ animationDelay: '3s' }}></div>
@@ -116,6 +120,7 @@ export const MyArticles: React.FC = () => {
                     }`}>
                       {article.status}
                     </span>
+                    <span className="flex items-center gap-1"><Tag size={10} /> {article.id.slice(0, 8)}...</span>
                   </div>
                 </div>
               </div>
@@ -140,7 +145,7 @@ export const MyArticles: React.FC = () => {
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
           <div className="bg-[#0f172a] rounded-2xl shadow-2xl border border-white/10 w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden relative">
-            
+             
             {/* Modal Header */}
             <div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
               <h3 className="text-xl font-bold text-white tracking-wide">Analysis Details</h3>
@@ -151,7 +156,7 @@ export const MyArticles: React.FC = () => {
 
             {/* Modal Content */}
             <div className="p-8 overflow-y-auto space-y-8 custom-scrollbar relative">
-              
+               
               {loadingDetail ? (
                 <div className="flex flex-col items-center justify-center py-20 text-pink-400">
                   <Loader2 size={40} className="animate-spin mb-4" />
@@ -240,7 +245,7 @@ export const MyArticles: React.FC = () => {
                   ) : (
                     // --- JSON VIEW ---
                     <div className="animate-fade-in">
-                       <div className="bg-black/40 p-6 rounded-xl border border-white/10 overflow-hidden">
+                        <div className="bg-black/40 p-6 rounded-xl border border-white/10 overflow-hidden">
                           <div className="flex justify-between items-center mb-4 pb-4 border-b border-white/10">
                              <span className="text-xs font-mono text-slate-500">source_output.json</span>
                              <span className="text-xs font-mono text-green-500 bg-green-900/20 px-2 py-1 rounded">200 OK</span>
@@ -248,13 +253,13 @@ export const MyArticles: React.FC = () => {
                           <pre className="text-xs sm:text-sm font-mono text-green-400 overflow-x-auto whitespace-pre-wrap break-words leading-relaxed">
                             {JSON.stringify(selectedArticle.outputJson, null, 2)}
                           </pre>
-                       </div>
+                        </div>
                     </div>
                   )}
                 </>
               )}
             </div>
-            
+             
             {/* Modal Footer */}
             <div className="p-4 bg-white/5 border-t border-white/10 flex justify-end">
                <button 
