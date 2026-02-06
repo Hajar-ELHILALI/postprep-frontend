@@ -13,22 +13,16 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // On mount, try to fetch user details to see if cookie is valid
-    // Note: You might need a /me endpoint or just rely on failing requests to trigger logout
-    // For now, we will assume if we have user data in localStorage (for persistence across refresh)
-    // we use it, otherwise we wait for a 401 to kick us out.
-    const storedUser = localStorage.getItem('postprep_user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    setLoading(false);
-  }, []);
+  // 1. Initialize State DIRECTLY from LocalStorage to avoid HMR resets
+  const [user, setUser] = useState<User | null>(() => {
+    const stored = localStorage.getItem('postprep_user');
+    return stored ? JSON.parse(stored) : null;
+  });
+  
+  const [loading, setLoading] = useState(false); // Start false since we loaded from storage above
 
   const login = (userData: User) => {
+    console.log("✅ Setting User in Context:", userData);
     setUser(userData);
     localStorage.setItem('postprep_user', JSON.stringify(userData));
   };
@@ -37,7 +31,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await api.post('/auth/logout');
     } catch (e) {
-      console.error("Logout failed", e);
+      console.error("Logout error", e);
     }
     setUser(null);
     localStorage.removeItem('postprep_user');
@@ -51,6 +45,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
+// Use a named export for the hook to satisfy Vite HMR rules
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) throw new Error('useAuth must be used within an AuthProvider');

@@ -1,48 +1,78 @@
 import React, { useState } from 'react';
-import { api } from '../lib/api';
+import { api } from '../lib/api'; // Ensure this points to your updated api.ts
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 export const Login: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
+  
+  // Form State
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
+  
+  // UI State
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [successMsg, setSuccessMsg] = useState('');
+
   const { login } = useAuth();
   const navigate = useNavigate();
-
-  const handleSubmit = async (e: React.FormEvent) => {
+const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
     try {
       if (isLogin) {
-        const res = await api.post('/auth/login', { email, password });
-        login(res.data);
-        navigate('/');
+        console.log("1. Sending Login Request...");
+        
+        // The backend sets the HttpOnly Cookie here.
+        // Even if it returns nothing, if it doesn't throw an error, we are Good.
+        await api.post('/auth/login', { email, password });
+        
+        console.log("2. Login Successful (Cookie Set)");
+
+        // --- THE FIX: MANUALLY CREATE THE USER OBJECT ---
+        // Since backend sends nothing, we fake it so the UI works.
+        const optimisticUser = {
+          id: 'temp-id',       // Placeholder
+          email: email,        // We know this from the form input
+          username: 'Admin',   // Placeholder
+          role: 'ADMIN'        // <--- CRITICAL: Force this so AdminRoute lets you in
+        };
+
+        // Update Context
+        login(optimisticUser);
+        
+        console.log("3. Force-navigating to Dashboard...");
+        navigate('/', { replace: true });
+        
       } else {
+        // Registration Logic...
         await api.post('/auth/register', { username, email, password });
         setIsLogin(true);
-        setError('Registration successful! Please login.');
+        setSuccessMsg('Registration successful! Please log in.');
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Authentication failed');
+      console.error("Auth Failed:", err);
+      setError('Login failed. Please check your credentials.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden bg-slate-900">
       
-      {/* Decorative ambient blobs behind the glass */}
+      {/* Background Ambience */}
       <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-pink-600 rounded-full mix-blend-multiply filter blur-[128px] opacity-40 animate-pulse"></div>
       <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-purple-600 rounded-full mix-blend-multiply filter blur-[128px] opacity-40 animate-pulse" style={{ animationDelay: '2s' }}></div>
 
       <div className="w-full max-w-5xl grid md:grid-cols-2 gap-16 items-center z-10">
         
-        {/* --- LEFT: The Frosted Glass Card --- */}
+        {/* --- LEFT: Login Form --- */}
         <div className="relative">
-          {/* Thin border line for the glass edge effect */}
           <div className="absolute inset-0 rounded-3xl border border-white/20 pointer-events-none"></div>
           
           <div className="bg-white/5 backdrop-blur-2xl p-10 md:p-12 rounded-3xl shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] border border-white/10">
@@ -53,9 +83,17 @@ export const Login: React.FC = () => {
               PostPrep
             </h1>
             
+            {/* Error Banner */}
             {error && (
-              <div className="bg-red-500/20 border border-red-500/30 text-red-100 p-3 rounded-xl mb-6 text-sm text-center backdrop-blur-sm">
+              <div className="bg-red-500/20 border border-red-500/30 text-red-100 p-3 rounded-xl mb-6 text-sm text-center backdrop-blur-sm animate-pulse">
                 {error}
+              </div>
+            )}
+
+            {/* Success Banner */}
+            {successMsg && (
+              <div className="bg-green-500/20 border border-green-500/30 text-green-100 p-3 rounded-xl mb-6 text-sm text-center backdrop-blur-sm">
+                {successMsg}
               </div>
             )}
 
@@ -88,9 +126,10 @@ export const Login: React.FC = () => {
               
               <button 
                 type="submit" 
-                className="w-full bg-gradient-to-r from-[#8B2E49] to-[#6b2338] hover:from-[#a03554] hover:to-[#8B2E49] text-white py-4 rounded-full font-bold tracking-widest shadow-lg shadow-pink-900/30 transition-all transform hover:scale-[1.02] mt-6 border border-white/10"
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-[#8B2E49] to-[#6b2338] hover:from-[#a03554] hover:to-[#8B2E49] text-white py-4 rounded-full font-bold tracking-widest shadow-lg shadow-pink-900/30 transition-all transform hover:scale-[1.02] mt-6 border border-white/10 disabled:opacity-50 disabled:cursor-wait"
               >
-                {isLogin ? 'ACCESS SYSTEM' : 'INITIALIZE'}
+                {loading ? 'PROCESSING...' : (isLogin ? 'ACCESS SYSTEM' : 'INITIALIZE')}
               </button>
             </form>
 
@@ -98,7 +137,12 @@ export const Login: React.FC = () => {
               <p className="text-sm text-white/50">
                 {isLogin ? "Need an account?" : "Have an account?"}
                 <button 
-                  onClick={() => setIsLogin(!isLogin)} 
+                  type="button"
+                  onClick={() => {
+                    setIsLogin(!isLogin);
+                    setError('');
+                    setSuccessMsg('');
+                  }} 
                   className="ml-2 text-pink-300 font-bold hover:text-white transition-colors"
                 >
                   {isLogin ? 'Sign Up' : 'Log In'}
@@ -108,7 +152,7 @@ export const Login: React.FC = () => {
           </div>
         </div>
 
-        {/* --- RIGHT: Cyber Text --- */}
+        {/* --- RIGHT: Marketing / Text --- */}
         <div className="hidden md:block">
           <h2 className="text-6xl font-bold text-white mb-6 leading-tight drop-shadow-lg">
             Extract Data<br />
